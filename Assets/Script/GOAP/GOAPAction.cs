@@ -3,9 +3,10 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class GOAPAction : MonoBehaviour
+public class GOAPAction
 {
     Func<GOAPState, bool> preconditions;
+    public Func<GOAPState, bool> Preconditions { get { return preconditions; } }
     Func<GOAPState> effects;
     string actionName;
     public string Name { get { return actionName; } }

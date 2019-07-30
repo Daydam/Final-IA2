@@ -55,7 +55,7 @@ public class Algorithms
         return result;
     }
 
-    public static Stack<T> AStar<T>(T start, Func<T, bool> isGoal, Func<T, float> heuristic, Func<T, IEnumerable<Arc<T>>> explode)
+    public static Stack<T> AStar<T>(T start, Func<T, bool> isGoal, Func<T, T, float> heuristic, Func<T, IEnumerable<Arc<T>>> explode)
     {
         var queue = new PriorityQueue<T>();
         var distances = new Dictionary<T, float>();

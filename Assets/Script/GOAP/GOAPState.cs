@@ -20,6 +20,7 @@ public class GOAPState
      * capable of REALLY keeping track of the world's state, managing details like time, distances, and lots of other stuff that would otherwise become ENGORROSO AS FUCK.*/
     Dictionary<string, Func<object>> updates;
     public Dictionary<string, Func<object>> Updates { get { return updates; } set { updates = value; } }
+
     public GOAPAction generatingAction = null;
     public int stepId = 0;
 

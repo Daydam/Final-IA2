@@ -5,9 +5,10 @@ using UnityEngine;
 
 public class GOAPAction
 {
-    Func<GOAPState, bool> preconditions;
-    public Func<GOAPState, bool> Preconditions { get { return preconditions; } }
-    Func<GOAPState> effects;
+    Dictionary<string, Func<object, bool>> preconditions;
+    public Dictionary<string, Func<object, bool>> Preconditions { get { return preconditions; } }
+    Dictionary<string, Func<object, object>> effects;
+    public Dictionary<string, Func<object, object>> Effects { get => effects; }
     string actionName;
     public string Name { get { return actionName; } }
     float cost;
@@ -17,8 +18,8 @@ public class GOAPAction
     {
         this.actionName = name;
         cost = 1f;
-        preconditions = a => true;
-        effects = () => new GOAPState();
+        preconditions = new Dictionary<string, Func<object, bool>>();
+        effects = new Dictionary<string, Func<object, object>>();
     }
 
     public GOAPAction SetCost (float cost)
@@ -27,15 +28,23 @@ public class GOAPAction
         return this;
     }
 
-    public GOAPAction SetPreconditions(Func<GOAPState, bool> preconditions)
+    public GOAPAction SetPreconditions(Dictionary<string, Func<object, bool>> preconditions)
     {
-        this.preconditions = preconditions;
+        foreach (KeyValuePair<string, Func<object, bool>> kv in preconditions)
+        {
+            if (!this.preconditions.ContainsKey(kv.Key)) this.preconditions.Add(kv.Key, kv.Value);
+            else this.preconditions[kv.Key] = kv.Value;
+        }
         return this;
     }
 
-    public GOAPAction SetEffects(Func<GOAPState> effects)
+    public GOAPAction SetEffects(Dictionary<string, Func<object, object>> effects)
     {
-        this.effects = effects;
+        foreach (KeyValuePair<string, Func<object, object>> kv in effects)
+        {
+            if (!this.effects.ContainsKey(kv.Key)) this.effects.Add(kv.Key, kv.Value);
+            else this.effects[kv.Key] = kv.Value;
+        }
         return this;
     }
 }

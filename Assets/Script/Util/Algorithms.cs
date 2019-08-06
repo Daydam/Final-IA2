@@ -55,15 +55,15 @@ public class Algorithms
         return result;
     }
 
-    public static Stack<T> AStar<T>(T start, Func<T, bool> isGoal, Func<T, T, float> heuristic, Func<T, IEnumerable<Arc<T>>> explode)
+    public static Stack<T> AStar<T>(T start, Func<T, bool> isGoal, Func<T, float> heuristic, Func<T, IEnumerable<Arc<T>>> explode)
     {
         var queue = new PriorityQueue<T>();
         var distances = new Dictionary<T, float>();
         var parents = new Dictionary<T, T>();
-        var visited = new HashSet<T>();
+        var visited = new List<T>();
 
         distances[start] = 0;
-        queue.Enqueue(new Arc<T>(start, 0));
+        queue.Enqueue(new Arc<T>().SetArc(start, 0));
 
         while (!queue.IsEmpty)
         {
@@ -81,12 +81,22 @@ public class Algorithms
                 var startToPopedDistance = distances[poped.Element];
                 var newDist = startToPopedDistance + elementToPopedDistance;
 
-                if(!visited.Contains(element) && startToElementDistance > newDist)
+                if (!visited.Contains(element) && startToElementDistance > newDist)
                 {
                     ListHandling.UpdateDictionary(distances, element, newDist);
                     ListHandling.UpdateDictionary(parents, element, poped.Element);
-                    queue.Enqueue(new Arc<T>(element, newDist + heuristic(element)));
+                    queue.Enqueue(new Arc<T>().SetArc(element, newDist + heuristic(element)));
                 }
+
+                //foreach (T prev in visited)
+                //{
+                //    if(compare(prev, element))
+                //    {
+                //        ListHandling.UpdateDictionary(distances, element, newDist);
+                //        ListHandling.UpdateDictionary(parents, element, poped.Element);
+                //        queue.Enqueue(new Arc<T>().SetArc(element, newDist + heuristic(element)));
+                //    }
+                //}
             }
         }
         return null;
@@ -100,7 +110,7 @@ public class Algorithms
         var visited = new HashSet<T>();
 
         distances[start] = 0;
-        queue.Enqueue(new Arc<T>(start, 0));
+        queue.Enqueue(new Arc<T>().SetArc(start, 0));
 
         while (!queue.IsEmpty)
         {
@@ -124,7 +134,7 @@ public class Algorithms
                     {
                         ListHandling.UpdateDictionary(distances, element, newDist);
                         ListHandling.UpdateDictionary(parents, element, parents[poped.Element]);
-                        queue.Enqueue(new Arc<T>(element, newDist + heuristic(element)));
+                        queue.Enqueue(new Arc<T>().SetArc(element, newDist + heuristic(element)));
                     }
                 }
                 else
@@ -138,7 +148,7 @@ public class Algorithms
                     {
                         ListHandling.UpdateDictionary(distances, element, newDist);
                         ListHandling.UpdateDictionary(parents, element, poped.Element);
-                        queue.Enqueue(new Arc<T>(element, newDist + heuristic(element)));
+                        queue.Enqueue(new Arc<T>().SetArc(element, newDist + heuristic(element)));
                     }
                 }
             }

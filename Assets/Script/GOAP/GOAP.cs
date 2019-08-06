@@ -4,7 +4,7 @@ using UnityEngine;
 using System;
 using System.Linq;
 
-public class GOAP : MonoBehaviour
+public class GOAP
 {
     //if object1 or object 2 == null, return cost, otherwise perform calculation
     public static Dictionary<string, Func<object, object, float, float>> heuristics;
@@ -14,35 +14,71 @@ public class GOAP : MonoBehaviour
         return heuristics[key];
     }
 
-
-    public static IEnumerable<GOAPAction> RunGOAP(GOAPEntity entity, GOAPState from, GOAPState to, IEnumerable<GOAPAction> actions, int watchdog = 200)
+    //So that heuristics can be set easily
+    public void UpdateHeuristics(Dictionary<string, Func<object, object, float, float>> newHeuristics)
     {
+        foreach (KeyValuePair<string, Func<object, object, float, float>> kv in newHeuristics)
+        {
+            if (heuristics.ContainsKey(kv.Key)) heuristics[kv.Key] = kv.Value;
+            else heuristics.Add(kv.Key, kv.Value);
+        }
+    }
+
+
+    public static IEnumerable<GOAPAction> RunGOAP(GOAPEntity entity, GOAPState from, GOAPState to, IEnumerable<GOAPAction> actions, int watchdog = 5000)
+    {
+        if (heuristics == null)
+            heuristics = new Dictionary<string, Func<object, object, float, float>>()
+            {
+                { "Energy", (a, b, c) => ((1-(float)a/(float)b))*c },
+                { "HouseBuilt", (a,b,c) => a == b? 0 : c }
+            };
+
         int watchdogCount = watchdog;
 
         var sequence = Algorithms.AStar<GOAPState>(
-            from, 
-            current => current.Equals(to), 
-            //Change this! Heuristic should depend on the data type
-            (current, goal) =>
+            from,
+            current => current.Equals(to),
+            (current) =>
                 {
                     float totalCost = 0f;
-                    foreach (KeyValuePair<string, object> valuePair in goal.Values)
+                    foreach (KeyValuePair<string, object> valuePair in to.Values)
                     {
-                        if (heuristics.ContainsKey(valuePair.Key)) totalCost += GetHeuristics(valuePair.Key)(current.Values[valuePair.Key], goal.Values[valuePair.Key], entity.GetPriority(valuePair.Key));
+                        if (heuristics.ContainsKey(valuePair.Key)) totalCost += GetHeuristics(valuePair.Key)(current.Values[valuePair.Key], to.Values[valuePair.Key], entity.GetPriority(valuePair.Key));
                     }
                     return totalCost;
                 },
             current =>
-            {
-                var arcs = new List<Arc<GOAPState>>();
-                if (watchdogCount == 0) return arcs;
-                else watchdogCount--;
-
-                foreach (GOAPAction act in actions)
                 {
-                    if(act.Preconditions())
+                    var arcs = new List<Arc<GOAPState>>();
+
+                    if (watchdogCount == 0) return arcs;
+                    else watchdogCount--;
+
+                    foreach (GOAPAction act in actions)
+                    {
+                        if (act.Preconditions.All(kv => current.Values.ContainsKey(kv.Key) && kv.Value(current.Values[kv.Key])))
+                        {
+                            var st = new GOAPState();
+                            st.generatingAction = act;
+                            st.UpdateValues(current.Values);
+                            st.UpdateValues(act.Effects);
+                            st.stepId = current.stepId + 1;
+                            arcs.Add(new Arc<GOAPState>().SetArc(st, act.Cost));
+                        }
+                    }
+                    return arcs;
                 }
-            }
-        return null;
+            );
+
+        if (sequence == null) return null;
+
+        foreach (var step in sequence.Skip(1))
+        {
+            Debug.Log(step.generatingAction.Name);
+        }
+        Debug.Log("Watchdog: " + watchdogCount);
+
+        return sequence.Skip(1).Select(x => x.generatingAction);
     }
 }

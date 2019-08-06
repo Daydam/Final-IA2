@@ -11,9 +11,13 @@ public class Arc<T>
     public T Element { get { return element; } }
     public float Weight { get { return weight; } }
 
-    public Arc(T element, float weight)
+    
+
+    public Arc<T> SetArc(T element, float weight)
     {
         this.element = element;
         this.weight = weight;
+
+        return this;
     }
 }

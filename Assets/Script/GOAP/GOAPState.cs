@@ -24,17 +24,42 @@ public class GOAPState
     public GOAPAction generatingAction = null;
     public int stepId = 0;
 
+    public GOAPState()
+    {
+        values = new Dictionary<string, object>();
+        updates = new Dictionary<string, Func<object>>();
+    }
+
     public bool Equals(GOAPState obj)
     {
         var result =
             obj != null
-            && obj.generatingAction == generatingAction
-            && obj.values.Count == values.Count
-            && obj.values.All(kv => values.ContainsValue(kv));
+            && obj.values.All(kv => values.Contains(kv));
         return result;
     }
 
-    public void UpdateValues()
+    public GOAPState UpdateValues(Dictionary<string, object> baseState)
+    {
+        foreach (KeyValuePair<string, object> kv in baseState)
+        {
+            if (values.ContainsKey(kv.Key)) values[kv.Key] = kv.Value;
+            else values.Add(kv.Key, kv.Value);
+        }
+        return this;
+    }
+
+    public GOAPState UpdateValues(Dictionary<string, Func<object, object>> baseState)
+    {
+        foreach (KeyValuePair<string, Func<object,object>> kv in baseState)
+        {
+            if (values.ContainsKey(kv.Key)) values[kv.Key] = kv.Value(values[kv.Key]);
+            else values.Add(kv.Key, kv.Value(default(object)));
+        }
+        return this;
+    }
+
+    ///This is not being used for now
+    public void UpdateData()
     {
         foreach (string key in updates.Keys)
         {

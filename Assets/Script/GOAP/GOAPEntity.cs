@@ -28,116 +28,103 @@ public class GOAPEntity : MonoBehaviour
         {
             new GOAPAction("BuildHouse").SetPreconditions
                 (
-                    new Dictionary<string, Func<object, bool>>()
+                //We need to see how to specify if we don't need a state for a boolean... this is gonna be bad.
+                    (a) =>
                     {
-                        { "HasHammer", (a) => (bool)a },
-                        { "Energy", (a) => (float)a >= 65 },
-                        { "Wood", (a) => (int)a >= 10 },
-                        { "HouseBuilt", (a) => true }
+                        return
+                            a.HasHammer &&
+                            a.Energy >= 65f &&
+                            a.Wood >= 10 &&
+                            !a.HouseBuilt;
                     }
                 ).SetEffects
                 (
-                    new Dictionary<string, Func<object, object>>()
+                    (a, b) =>
                     {
-                        { "Energy", (a) => Mathf.Max((float)a - 65f, 0f) },
-                        { "Wood", (a) => Mathf.Max((int)a - 10, 0) },
-                        { "HouseBuilt", (a) => true }
+                        b.Energy = a.Energy -65f;
+                        b.Wood = a.Wood -10;
+                        b.HouseBuilt = true;
                     }
                 ),
             new GOAPAction("GatherWood").SetPreconditions
                 (
-                    new Dictionary<string, Func<object, bool>>()
+                    (a) =>
                     {
-                        { "HasAxe", (a) => (bool)a },
-                        { "Energy", (a) => (float)a >= 35 }
+                        return
+                            a.HasAxe &&
+                            a.Energy >= 35;
                     }
                 ).SetEffects
                 (
-                    new Dictionary<string, Func<object, object>>()
+                    (a,b) =>
                     {
-                        { "Energy", (a) => Mathf.Max((float)a - 35f, 0f) },
-                        { "Wood", (a) => Mathf.Min((int)a + 10, 100) }
+                        b.Energy = a.Energy -35f;
+                        b.Wood = a.Wood +10;
                     }
                 ),
             new GOAPAction("PickAxe").SetPreconditions
                 (
-                    new Dictionary<string, Func<object, bool>>()
+                    (a) =>
                     {
-                        { "HasAxe", (a) => !(bool)a }
+                        return !a.HasAxe;
                     }
                 ).SetEffects
                 (
-                    new Dictionary<string, Func<object, object>>()
+                    (a,b) =>
                     {
-                        { "HasAxe", (a) => true }
+                        b.HasAxe = true;
                     }
                 ),
             new GOAPAction("Sleep").SetPreconditions
                 (
-                    new Dictionary<string, Func<object, bool>>()
+                    (a) =>
                     {
-                        { "HasBed", (a) => (bool)a },
-                        { "Energy", (a) => (float)a <= 75 }
+                        return
+                            a.BedBuilt &&
+                            a.Energy <= 75;
                     }
                 ).SetEffects
                 (
-                    new Dictionary<string, Func<object, object>>()
+                    (a,b) =>
                     {
-                        { "Energy", (a) => Mathf.Min((float)a + 50f, 100f) }
+                        b.Energy = a.Energy+50f;
                     }
                 ),
             new GOAPAction("PickHammer").SetPreconditions
                 (
-                    new Dictionary<string, Func<object, bool>>()
+                (a) =>
                     {
-                        { "HasHammer", (a) => !(bool)a }
+                        return !a.HasHammer;
                     }
                 ).SetEffects
                 (
-                    new Dictionary<string, Func<object, object>>()
+                    (a,b) =>
                     {
-                        { "HasHammer", (a) => true }
+                        b.HasHammer = true;
                     }
                 ),
             new GOAPAction("BuildBed").SetPreconditions
                 (
-                    new Dictionary<string, Func<object, bool>>()
+                    (a) =>
                     {
-                        { "HasBed", (a) => !(bool)a },
-                        { "Energy", (a) => (float)a >= 40 }
+                        return
+                            !a.BedBuilt &&
+                            a.Energy >= 40f;
                     }
                 ).SetEffects
                 (
-                    new Dictionary<string, Func<object, object>>()
+                    (a,b) =>
                     {
-                        { "Energy", (a) => Mathf.Max((float)a - 40f, 0f) },
-                        { "HasBed", (a) => true }
+                        b.Energy = a.Energy-40f;
+                        b.BedBuilt = true;
                     }
                 ),
         };
 
-        current = new GOAPState().UpdateValues
-            (
-                new Dictionary<string, object>()
-                {
-                    //If a value isn't here, this breaks. We need to create a getter for these values.
-                    { "Energy", 100f },
-                    { "Wood", 0 },
-                    { "HasHammer", false },
-                    { "HouseBuilt", false },
-                    { "HasAxe", false },
-                    { "HasBed", false }
-                }
-            );
+        current = new GOAPState(100, 0);
 
-        GOAPState to = new GOAPState().UpdateValues
-            (
-                new Dictionary<string, object>()
-                {
-                    { "Energy", 100f },
-                    { "HouseBuilt", true }
-                }
-            );
+        //We need a way to set the boolean for HouseBuilt as required! Maybe turn to into a func as well?
+        GOAPState to = new GOAPState(100f);
 
         GOAP.RunGOAP(this, current, to, actions);
     }

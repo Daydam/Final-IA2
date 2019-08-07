@@ -38,15 +38,10 @@ public class GOAP
 
         var sequence = Algorithms.AStar<GOAPState>(
             from,
-            current => current.Equals(to),
+            current => current.Satisfies(to),
             (current) =>
                 {
-                    float totalCost = 0f;
-                    foreach (KeyValuePair<string, object> valuePair in to.Values)
-                    {
-                        if (heuristics.ContainsKey(valuePair.Key)) totalCost += GetHeuristics(valuePair.Key)(current.Values[valuePair.Key], to.Values[valuePair.Key], entity.GetPriority(valuePair.Key));
-                    }
-                    return totalCost;
+                    current.Heuristics(to, );
                 },
             current =>
                 {
@@ -57,12 +52,11 @@ public class GOAP
 
                     foreach (GOAPAction act in actions)
                     {
-                        if (act.Preconditions.All(kv => current.Values.ContainsKey(kv.Key) && kv.Value(current.Values[kv.Key])))
+                        if (act.Preconditions(current))
                         {
                             var st = new GOAPState();
                             st.generatingAction = act;
-                            st.UpdateValues(current.Values);
-                            st.UpdateValues(act.Effects);
+                            act.Effects(current, st);
                             st.stepId = current.stepId + 1;
                             arcs.Add(new Arc<GOAPState>().SetArc(st, act.Cost));
                         }

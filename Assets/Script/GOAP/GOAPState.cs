@@ -6,64 +6,66 @@ using System.Linq;
 
 public class GOAPState
 {
-    /*TBH, I didn't want to use object, but found no better choice for using generic data as a value*/
-
-    /*I could've done a class-saving structure as seen in Memento, with a generic Memory class for storing different scripts's values,
-     * but I felt like this would be better. This way, I can get a really customizable value list, like for example, the distance from an enemy to my character,
-     * without having to store the enemy position, my character position, and lots of other stuff that I may not care about.
-     * I can store literally anything I want, and I fucking love it.*/
-    
-    Dictionary<string, object> values;
-    public Dictionary<string, object> Values { get { return values; } set { values = value; } }
-
-    /*This will come in handy for some constantly changing states, such as positions and stuff. It turns the GOAPState into something more like a memento,
-     * capable of REALLY keeping track of the world's state, managing details like time, distances, and lots of other stuff that would otherwise become ENGORROSO AS FUCK.*/
-    Dictionary<string, Func<object>> updates;
-    public Dictionary<string, Func<object>> Updates { get { return updates; } set { updates = value; } }
+    float energy;
+    int wood;
+    bool hasAxe;
+    bool hasHammer;
+    bool bedBuilt;
+    bool houseBuilt;
+    string equipped;
+    public float Energy { get => energy; set => energy = value; }
+    public int Wood { get => wood; set => wood = value; }
+    public bool HasAxe { get => hasAxe; set => hasAxe = value; }
+    public bool HasHammer { get => hasHammer; set => hasHammer = value; }
+    public string Equipped { get => equipped; set => equipped = value; }
+    public bool BedBuilt { get => bedBuilt; set => bedBuilt = value; }
+    public bool HouseBuilt { get => houseBuilt; set => houseBuilt = value; }
 
     public GOAPAction generatingAction = null;
     public int stepId = 0;
 
-    public GOAPState()
+
+    public GOAPState(float energy = 0, int wood = 0, bool hasAxe = false, bool hasHammer = false, bool bedBuilt = false, bool houseBuilt = false, string equipped = "")
     {
-        values = new Dictionary<string, object>();
-        updates = new Dictionary<string, Func<object>>();
+        this.energy = energy;
+        this.wood = wood;
+        this.hasAxe = hasAxe;
+        this.hasHammer = hasHammer;
+        this.bedBuilt = bedBuilt;
+        this.houseBuilt = houseBuilt;
+        this.equipped = equipped;
     }
 
-    public bool Equals(GOAPState obj)
+    public bool Satisfies(GOAPState obj)
     {
-        var result =
-            obj != null
-            && obj.values.All(kv => values.Contains(kv));
-        return result;
+        return
+            energy >= obj.Energy &&
+            wood >= obj.Wood &&
+            hasAxe == obj.HasAxe &&
+            hasHammer == obj.HasHammer &&
+            equipped == obj.Equipped;
     }
 
-    public GOAPState UpdateValues(Dictionary<string, object> baseState)
+    public float Heuristics(GOAPState target, float energyPriority, float woodPriority, float hasAxePriority, float hasHammerPriority, float equippedPriority)
     {
-        foreach (KeyValuePair<string, object> kv in baseState)
-        {
-            if (values.ContainsKey(kv.Key)) values[kv.Key] = kv.Value;
-            else values.Add(kv.Key, kv.Value);
-        }
+        float cost = 0;
+        cost += target.Energy > energy ? (target.Energy - energy * energyPriority) : 0;
+        cost += target.Wood > wood ? (target.Wood - wood) * woodPriority : 0;
+        cost += target.HasHammer != hasHammer ? hasHammerPriority : 0;
+        cost += target.HasAxe != hasAxe ? hasAxePriority : 0;
+        cost += target.Equipped != equipped ? equippedPriority : 0;
+        Debug.Log("Cost: " + cost);
+        return cost;
+    }
+
+    //Simply replace values
+    public GOAPState UpdateValues(GOAPState baseState)
+    {
+        energy = baseState.Energy;
+        wood = baseState.Wood;
+        hasAxe = baseState.HasAxe;
+        hasHammer = baseState.HasHammer;
+        equipped = baseState.Equipped;
         return this;
-    }
-
-    public GOAPState UpdateValues(Dictionary<string, Func<object, object>> baseState)
-    {
-        foreach (KeyValuePair<string, Func<object,object>> kv in baseState)
-        {
-            if (values.ContainsKey(kv.Key)) values[kv.Key] = kv.Value(values[kv.Key]);
-            else values.Add(kv.Key, kv.Value(default(object)));
-        }
-        return this;
-    }
-
-    ///This is not being used for now
-    public void UpdateData()
-    {
-        foreach (string key in updates.Keys)
-        {
-            values[key] = updates[key]();
-        }
     }
 }

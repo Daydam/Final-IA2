@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System.Linq;
 
 public class Algorithms
 {
@@ -170,5 +171,62 @@ public class Algorithms
         }
 
         return path;
+    }
+
+    //Stop! Linq time!
+    public static IEnumerable<Tuple<T, IEnumerable<T>>> AStarNew<T>(
+           T start
+         , Func<T, bool> satisfies
+         , Func<T, T, bool> visited
+         , Func<T, float> heuristic
+         , Func<T, IEnumerable<Tuple<T, float>>> expand
+    )
+    {
+        var closed = new HashSet<T>();
+        var open = new HashSet<T>();
+        var parents = new Dictionary<T, T>();
+        var gs = new Dictionary<T, float>();
+        gs[start] = 0f;
+        open.Add(start);
+        while (open.Any())
+        {
+            var current = open.OrderBy(x => gs[x] + heuristic(x)).First();
+            open.Remove(current);
+            closed.Add(current);
+
+            if (satisfies(current))
+            {
+                var path = Generate(current, n => parents[n])
+                    .TakeWhile(n => parents.ContainsKey(n))
+                    .Reverse();
+
+                yield return Tuple.Create(current, path);
+            }
+
+            yield return Tuple.Create(current, default(IEnumerable<T>));
+            var expandList = expand(current)
+                .Where(x => !closed.Contains(x.Item1));
+            foreach (var adj in expandList)
+            {
+                var altCost = gs[current] + adj.Item2;
+                var adjNode = adj.Item1;
+                if (!gs.ContainsKey(adjNode) || gs[adjNode] > altCost)
+                {
+                    gs[adjNode] = altCost;
+                    parents[adjNode] = current;
+                    open.Add(adjNode);
+                }
+            }
+        }
+    }
+
+    public static IEnumerable<T> Generate<T>(T seed, Func<T, T> mutate)
+    {
+        var accum = seed;
+        while (true)
+        {
+            yield return accum;
+            accum = mutate(accum);
+        }
     }
 }

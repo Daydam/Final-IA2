@@ -6,73 +6,83 @@ using System.Linq;
 
 public class GOAP
 {
-    //if object1 or object 2 == null, return cost, otherwise perform calculation
-    public static Dictionary<string, Func<object, object, float, float>> heuristics;
-    public static Func<object, object, float, float> GetHeuristics(string key)
+    public static IEnumerable<GOAPAction> RunGOAP(GOAPEntity entity, GOAPState from, IEnumerable<GOAPAction> actions, int watchdog = 6000)
     {
-        if (!heuristics.ContainsKey(key)) heuristics.Add(key, (a, b, c) => { return 0; });
-        return heuristics[key];
+        int watchdogCount = 0;
+
+        var sequence = Algorithms.AStarNew<GOAPState>(
+            from,
+            current => entity.Satisfies(current),
+            (current, toCompare) => current.Equals(toCompare),
+            current => entity.Heuristics(current),
+            current =>
+                {
+                    return actions
+                        .Where(a => a.Preconditions(current))
+                        .Aggregate(
+                            new FList<Tuple<GOAPState, float>>(),
+                            (possibleList, a) =>
+                            {
+                                if (watchdogCount < watchdog)
+                                {
+                                    var st = new GOAPState(current);
+                                    st.generatingAction = a;
+                                    a.Effects(current, st);
+                                    st.stepId = current.stepId + 1;
+                                    watchdogCount++;
+                                    return possibleList + Tuple.Create(st, a.Cost);
+                                }
+                                else return possibleList;
+                            }
+                        );
+                }
+            );
+
+
+
+        if (sequence == null) return null;
+
+        Debug.Log("Watchdog: " + watchdogCount);
+        return sequence.Skip(1).Select(x => { Debug.Log(x.Item1.generatingAction.Name); return x.Item1.generatingAction; });
     }
 
-    //So that heuristics can be set easily
-    public void UpdateHeuristics(Dictionary<string, Func<object, object, float, float>> newHeuristics)
+    public static IEnumerable<GOAPAction> RunGOAPOld(GOAPEntity entity, GOAPState from, IEnumerable<GOAPAction> actions, int watchdog = 6000)
     {
-        foreach (KeyValuePair<string, Func<object, object, float, float>> kv in newHeuristics)
-        {
-            if (heuristics.ContainsKey(kv.Key)) heuristics[kv.Key] = kv.Value;
-            else heuristics.Add(kv.Key, kv.Value);
-        }
-    }
-
-
-    public static IEnumerable<GOAPAction> RunGOAP(GOAPEntity entity, GOAPState from, GOAPState to, IEnumerable<GOAPAction> actions, int watchdog = 5000)
-    {
-        if (heuristics == null)
-            heuristics = new Dictionary<string, Func<object, object, float, float>>()
-            {
-                { "Energy", (a, b, c) => ((1-(float)a/(float)b))*c },
-                { "HouseBuilt", (a,b,c) => a == b? 0 : c }
-            };
-
         int watchdogCount = watchdog;
 
         var sequence = Algorithms.AStar<GOAPState>(
             from,
-            current => current.Satisfies(to),
-            (current) =>
-                {
-                    current.Heuristics(to, );
-                },
+            current => entity.Satisfies(current),
+            current => entity.Heuristics(current),
             current =>
+            {
+                var arcs = new List<Arc<GOAPState>>();
+                if (watchdogCount == 0) return arcs;
+                else watchdogCount--;
+
+                foreach (GOAPAction act in actions)
                 {
-                    var arcs = new List<Arc<GOAPState>>();
-
-                    if (watchdogCount == 0) return arcs;
-                    else watchdogCount--;
-
-                    foreach (GOAPAction act in actions)
+                    if (act.Preconditions(current))
                     {
-                        if (act.Preconditions(current))
-                        {
-                            var st = new GOAPState();
-                            st.generatingAction = act;
-                            act.Effects(current, st);
-                            st.stepId = current.stepId + 1;
-                            arcs.Add(new Arc<GOAPState>().SetArc(st, act.Cost));
-                        }
+                        var st = new GOAPState(current);
+                        st.generatingAction = act;
+                        act.Effects(current, st);
+                        st.stepId = current.stepId + 1;
+                        arcs.Add(new Arc<GOAPState>().SetArc(st, act.Cost));
                     }
-                    return arcs;
                 }
+                return arcs;
+            }
             );
-
+        
         if (sequence == null) return null;
 
-        foreach (var step in sequence.Skip(1))
+        foreach (var step in sequence)
         {
             Debug.Log(step.generatingAction.Name);
         }
         Debug.Log("Watchdog: " + watchdogCount);
 
-        return sequence.Skip(1).Select(x => x.generatingAction);
+        return sequence.Select(x => x.generatingAction);
     }
 }

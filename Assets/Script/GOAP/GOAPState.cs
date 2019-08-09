@@ -13,19 +13,23 @@ public class GOAPState
     bool bedBuilt;
     bool houseBuilt;
     string equipped;
-    public float Energy { get => energy; set => energy = value; }
-    public int Wood { get => wood; set => wood = value; }
+    List<string> keys;
+    int patienceRate;
+    public float Energy { get => energy; set => energy = Mathf.Max(Mathf.Min(value, 100),0); }
+    public int Wood { get => wood; set => wood = Mathf.Max(value, 0); }
     public bool HasAxe { get => hasAxe; set => hasAxe = value; }
     public bool HasHammer { get => hasHammer; set => hasHammer = value; }
     public string Equipped { get => equipped; set => equipped = value; }
     public bool BedBuilt { get => bedBuilt; set => bedBuilt = value; }
-    public bool HouseBuilt { get => houseBuilt; set => houseBuilt = value; }
+    public bool HouseOwned { get => houseBuilt; set => houseBuilt = value; }
+    public List<string> Keys { get => keys; set => keys = value; }
+    public int PatienceRate { get => patienceRate; set => patienceRate = Mathf.Max(Mathf.Min(value, 10), 0); }
 
     public GOAPAction generatingAction = null;
     public int stepId = 0;
 
 
-    public GOAPState(float energy = 0, int wood = 0, bool hasAxe = false, bool hasHammer = false, bool bedBuilt = false, bool houseBuilt = false, string equipped = "")
+    public GOAPState(float energy = 0, int wood = 0, int patienceRate = 10, bool hasAxe = false, bool hasHammer = false, bool bedBuilt = false, bool houseBuilt = false, string equipped = "", List<string> keys = null)
     {
         this.energy = energy;
         this.wood = wood;
@@ -34,28 +38,22 @@ public class GOAPState
         this.bedBuilt = bedBuilt;
         this.houseBuilt = houseBuilt;
         this.equipped = equipped;
+        this.patienceRate = patienceRate;
+        if (keys == null) this.keys = new List<string>() { "" };
+        else this.keys = keys;
     }
 
-    public bool Satisfies(GOAPState obj)
+    public GOAPState(GOAPState toClone)
     {
-        return
-            energy >= obj.Energy &&
-            wood >= obj.Wood &&
-            hasAxe == obj.HasAxe &&
-            hasHammer == obj.HasHammer &&
-            equipped == obj.Equipped;
-    }
-
-    public float Heuristics(GOAPState target, float energyPriority, float woodPriority, float hasAxePriority, float hasHammerPriority, float equippedPriority)
-    {
-        float cost = 0;
-        cost += target.Energy > energy ? (target.Energy - energy * energyPriority) : 0;
-        cost += target.Wood > wood ? (target.Wood - wood) * woodPriority : 0;
-        cost += target.HasHammer != hasHammer ? hasHammerPriority : 0;
-        cost += target.HasAxe != hasAxe ? hasAxePriority : 0;
-        cost += target.Equipped != equipped ? equippedPriority : 0;
-        Debug.Log("Cost: " + cost);
-        return cost;
+        this.energy = toClone.energy;
+        this.wood = toClone.wood;
+        this.hasAxe = toClone.hasAxe;
+        this.hasHammer = toClone.hasHammer;
+        this.bedBuilt = toClone.bedBuilt;
+        this.houseBuilt = toClone.houseBuilt;
+        this.equipped = toClone.equipped;
+        this.patienceRate = toClone.patienceRate;
+        this.keys = toClone.keys;
     }
 
     //Simply replace values
@@ -67,5 +65,19 @@ public class GOAPState
         hasHammer = baseState.HasHammer;
         equipped = baseState.Equipped;
         return this;
+    }
+
+    public bool Equals(GOAPState toCompare)
+    {
+        return toCompare == this;
+            //energy == toCompare.energy
+            //&& wood == toCompare.wood
+            //&& hasAxe == toCompare.hasAxe
+            //&& hasHammer == toCompare.hasHammer
+            //&& bedBuilt == toCompare.bedBuilt
+            //&& houseBuilt == toCompare.houseBuilt
+            //&& equipmentCount == toCompare.equipmentCount
+            //&& equipped == toCompare.equipped
+            //&& generatingAction == toCompare.generatingAction;
     }
 }
